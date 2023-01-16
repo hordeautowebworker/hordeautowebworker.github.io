@@ -27,9 +27,26 @@
     .bg_green {
 			background-color: #129c00;
 		}
+    .bg_green:hover {
+			background-color: #058105;
+		}
+    .bg_green:focus {
+			background-color: #058105;
+		}
     .bg_blue {
 			background-color: #4b68e7;
 		}
+    
+    .bg_orange {
+			background-color: #f3851f;
+		}
+    .bg_orange:hover {
+			background-color: #d6850c;
+		}
+    .bg_orange:focus {
+			background-color: #d6850c;
+		}
+    
     .bg_red {
 			background-color: #eb3131;
 		}
@@ -39,6 +56,7 @@
     .bg_red:focus {
 			background-color: #c42121;
 		}
+
     .color_blue {
 			color: #4b68e7;
 		}
@@ -85,6 +103,14 @@
       padding: 2px; 
       margin: 1px;
     }
+
+    div.twogrid {
+    display:grid;
+    grid-template-columns: max-content auto;
+    grid-gap:1px;
+    }
+    div.twogrid.twogridfirst  { text-align:right; }
+    div.twogrid.twogridsecond { content: ":"; }
 
    
     </style>
@@ -144,30 +170,38 @@
       {'name': 'Hassanblend', 'file': 'HassanBlend1.5'}
     ]);
 
-    var a1111_base_url = "http://localhost:7860";
     var a1111_models_endpoint = "/sdapi/v1/sd-models";
     var a1111_options_endpoint = "/sdapi/v1/options";
     var a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
-
-    var client_agent = "HordeAutoWebWorker:1";
-    var apikey = "0000000000";
-    var stablehorde_finduser_endpoint = "https://stablehorde.net/api/v2/find_user";
-    var stablehorde_perf_endpoint = "https://stablehorde.net/api/v2/status/performance";
-    var stablehorde_pop_endpoint = "https://stablehorde.net/api/v2/generate/pop";
-    var stablehorde_submit_endpoint = "https://stablehorde.net/api/v2/generate/submit";
+    var client_agent = "HordeAutoWebWorker:1";    
+    var stablehorde_finduser_endpoint = "/api/v2/find_user";
+    var stablehorde_perf_endpoint = "/api/v2/status/performance";
+    var stablehorde_pop_endpoint = "/api/v2/generate/pop";
+    var stablehorde_submit_endpoint = "/api/v2/generate/submit";
 
     var a1111_connection_status = ConnStatus.Disconnected;
     var horde_connection_status = ConnStatus.Disconnected;
     var current_loaded_model = "";
     var localmodels = []; //stores an array of locally available models, along with the names to show on horde {name:name, file:file, shared:true}
-    var workername = "HordeAutoWebWorker" + Math.floor(Math.random()*8999 + 1000);
-    var allownsfw = true; //note that although we express a preference to avoid nsfw, we cannot guarantee it as we dont have the model to detect nsfw images
-    var allowunsafeip = true;
-    var allowimg2img = true;
-    var allowpainting = true;
-    var allowpostprocessing = false;
-    var priority_usernames = [];
-    var maxpixels = 262144;
+    var workerprefix = "HAWW_";
+
+    //configurable settings
+    var localsettings = {
+      persistsettings:false,
+      a1111_base_url:"http://localhost:7860",
+      horde_base_url:"https://stablehorde.net",
+      apikey:"0000000000",
+
+      workername: "WebWorker" + Math.floor(Math.random() * 8999 + 1000),
+      allownsfw: true, //note that although we express a preference to avoid nsfw, we cannot guarantee it as we dont have the model to detect nsfw images
+      allowunsafeip: true,
+      allowimg2img: true,
+      allowpainting: true,
+      allowpostprocessing: false,
+      priority_usernames: [],
+      maxpixels: 262144,
+    };
+
 
     var preventmultisessionguid = Math.floor(Math.random()*999999);
     var horde_userdata = {};
@@ -176,32 +210,73 @@
     var jobsdone = 0;
     var sessionkudos = 0;
     var lasttasktime = null;
-    var lasttasktimetaken = 0;   
+    var lasttasktimetaken = 0;
+    var job_time_start = new Date();
     var errorsencountered = 0; 
     var stopaftererrors = 5; //on 5 errors, disconnect  
     var current_task_id = null;
     var currently_polling = false;
+    var update_perf_data_counter = 0;
+    var workerpaused = false;
+
+    var dbgplus = false;
    
     function dbglog(obj)
     {
-      console.log(obj);
+      if(dbgplus)
+      {
+        console.log(obj);
+      }
     }
 
     function init()
     {
       dbglog("Init started");
+
+      //read the url params, enable or disable debugplus
+      const urlParams = new URLSearchParams(window.location.search);
+      const dbgparam = urlParams.get('dbgplus');
+      if (dbgparam == "1") {
+        dbgplus = true;
+        msginfo("Debugging Mode Enabled");
+        workerprefix = "";
+        document.getElementById("dbgplus").style.display = "block";
+      }
+
       //load settings
-      document.getElementById("a1111url").value = a1111_base_url;
-      document.getElementById("workername").value = workername;
-      document.getElementById("allownsfw").checked = allownsfw;
-      document.getElementById("allowunsafeip").checked = allowunsafeip;
-      document.getElementById("allowimg2img").checked = allowimg2img;
-      document.getElementById("allowpainting").checked = allowpainting;
-      document.getElementById("allowpostprocessing").checked = allowpostprocessing;
-      document.getElementById("apikey").value = apikey;
-      document.getElementById("priority_usernames").value = JSON.stringify(priority_usernames);
-      let mp = parseInt(maxpixels);
-      document.getElementById("maxpixels").value = ((isNaN(mp)||mp<=0)?262144:mp);    
+      try {
+        let loadedsettingsjson = localStorage.getItem("hordeautowebworker_settings");
+        if (loadedsettingsjson != null && loadedsettingsjson != "") {
+          let loadedsettings = JSON.parse(loadedsettingsjson);
+          //see if persist is enabled		
+          if (loadedsettings && loadedsettings.persistsettings) {
+            localsettings = loadedsettings;            
+            dbglog("Loaded settings");
+          } else {
+            dbglog("Persist is off");
+          }
+        } else {
+          dbglog("Settings not found");
+        }
+      } catch (e) {
+        dbglog("Discarded invalid local save: " + e);
+      }
+
+      document.getElementById("persistsettings").checked = localsettings.persistsettings;
+      document.getElementById("a1111url").value = localsettings.a1111_base_url;
+      document.getElementById("hordeurl").value = localsettings.horde_base_url;
+      document.getElementById("workerprefix").innerText = workerprefix;
+      document.getElementById("workername").value = localsettings.workername;
+      document.getElementById("allownsfw").checked = localsettings.allownsfw;
+      document.getElementById("allowunsafeip").checked = localsettings.allowunsafeip;
+      document.getElementById("allowimg2img").checked = localsettings.allowimg2img;
+      document.getElementById("allowpainting").checked = localsettings.allowpainting;
+      document.getElementById("allowpostprocessing").checked = localsettings.allowpostprocessing;
+      document.getElementById("apikey").value = localsettings.apikey;
+      document.getElementById("priority_usernames").value = JSON.stringify(localsettings.priority_usernames);
+      let mp = parseInt(localsettings.maxpixels);
+      document.getElementById("maxpixels").value = ((isNaN(mp)||mp<=0)?262144:mp);  
+      
 
       //start the polling script for the worker checking every 4s
       setInterval(poll_worker, 4000);
@@ -223,6 +298,8 @@
       current_task_id = null;  
       currently_polling = false;
       errorsencountered = 0;    
+      update_perf_data_counter = 0;
+      workerpaused = false;
     }
 
     //from the request from horde, find our own local mapping
@@ -239,7 +316,7 @@
         }
       }
       //if we failed to find, just use the first model, but show a warning
-      msginfo("Warning: Requested model "+hordename+" was not found locally! Returning default.")
+      msginfo("Warning: Requested model "+hordename+" was not found locally! Returning default.", true)
       return localmodels[0];
     }
 
@@ -310,11 +387,18 @@
       horde_connection_status = ConnStatus.Disconnected;
       current_task_id = null;
       currently_polling = false;
+      workerpaused = false;
       msginfo("Worker Stopped");
       render_status();
       document.getElementById("connect_panel").style.display = "block";
       document.getElementById("setup_panel").style.display = "none";
       document.getElementById("worker_panel").style.display = "none";
+    }
+
+    function togglepause()
+    {
+      workerpaused = !workerpaused;
+      render_status();
     }
 
     function connect_to_a1111()
@@ -327,15 +411,18 @@
       msginfo("Reading Models...");
 
       //establish initial connection to a1111 api
-      fetch(a1111_base_url+a1111_models_endpoint)
+      fetch(localsettings.a1111_base_url+a1111_models_endpoint)
         .then(x => x.json())
         .then(modelsdata => {
 
+          dbglog(modelsdata);
           msginfo("Reading Settings...");
 
-        fetch(a1111_base_url+a1111_options_endpoint)
+        fetch(localsettings.a1111_base_url+a1111_options_endpoint)
         .then(y => y.json())
         .then(optionsdata => {
+
+          dbglog(optionsdata);
 
           msginfo("A1111 Connected Successfully. Please configure worker.");
 
@@ -351,8 +438,7 @@
           {
             selectionhtml += `<option value="`+modelmaps[i].name+`">`;
           }
-          selectionhtml += `</datalist>`;
-          // selectionhtml += `<tr><td style="font-size: 12px; class="col-8">Model Found</td><td style="font-size: 12px; class="col-8">Shared As</td></tr>`;
+          selectionhtml += `</datalist>`;         
           let mdllist = document.getElementById("choosemodels");
           for(var i=0;i<modelsdata.length;++i)
           { 
@@ -363,7 +449,7 @@
             {
               trimname = trimname.substring(0,dotpos);
             }
-            selectionhtml += `<tr><td class="col-8" style="font-size: 12px;"><input type="checkbox" name="mdlcheckbox" class="form-check-input" id="mdlcheck`+i+`" checked> `+trimname+`</td>
+            selectionhtml += `<tr><td class="col-8" style="font-size: 12px;"><input type="checkbox" name="mdlcheckbox" class="form-check-input" id="mdlcheck`+i+`"> `+trimname+`</td>
               <td class="col-8">
                 <input list="sdmodels" class="form-control smallinput" id="mdlname`+i+`" placeholder="[Not Shared]" value="`+trimname+`" onblur="validate_models()">
                 </td></tr>`;
@@ -379,17 +465,28 @@
 
           }).catch((error) => {
             disconnect();
-            msginfo(error);
+            msginfo("A1111 Connect Error: "+error, true);
             a1111_connection_status = ConnStatus.Error;
             render_status();
           });
         }).catch((error) => {
           disconnect();
-          msginfo(error);
+          msginfo("A1111 Connect Error: "+error, true);
           a1111_connection_status = ConnStatus.Error;
           render_status();
         });
     }
+
+    function update_perf_data(onDone) {
+        fetch(localsettings.horde_base_url + stablehorde_perf_endpoint)
+          .then(x => x.json())
+          .then(perfdata => {
+            horde_perfinfo = perfdata;
+            dbglog("Perf data updated");
+          }).catch((error) => {
+            dbglog("Error updating perf data");
+          });
+      }
 
     function connect_to_horde()
     {
@@ -397,20 +494,20 @@
       var ml = prepare_model_list();
       if(ml.length==0)
       {
-        msginfo("You must share at least 1 model!");
+        msginfo("Error: You must share at least 1 model!", true);
       }else{
 
       horde_connection_status = ConnStatus.Connecting;
       msginfo("Getting Workers...");
-      fetch(stablehorde_perf_endpoint)
+      fetch(localsettings.horde_base_url+stablehorde_perf_endpoint)
         .then(x => x.json())
         .then(perfdata => {
 
           msginfo("Getting User Profile...");
-          fetch(stablehorde_finduser_endpoint, {
+          fetch(localsettings.horde_base_url+stablehorde_finduser_endpoint, {
 						method: 'GET', // or 'PUT'
 						headers: {						
-							'apikey': apikey,
+							'apikey': localsettings.apikey,
               'Client-Agent':client_agent,
 						},
 					})       
@@ -432,52 +529,51 @@
 
           } else {
             horde_connection_status = ConnStatus.Error;
-            msginfo("API Key is Invalid");
+            msginfo("Error: API Key is Invalid", true);
           }
           render_status();
 
         }).catch((error) => {
           disconnect();
-          msginfo(error);
+          msginfo("Horde Get User Error: " + error, true);
           horde_connection_status = ConnStatus.Error;
           render_status();
         });
 
         }).catch((error) => {
           disconnect();
-          msginfo(error);
+          msginfo("Horde Connect Error: "+error, true);
           horde_connection_status = ConnStatus.Error;
           render_status();
         });     
-      }   
+      } 
     }
 
     function handle_switch_model(modelfilename,onDone)
     {
-      if(modelfilename!=current_loaded_model)
-      {
-        msginfo("Switching models from " + current_loaded_model + " to " + modelfilename);       
-        fetch(a1111_base_url+a1111_options_endpoint, {
-						method: 'POST', 
-						headers: {
-							'Content-Type': 'application/json',							
-						},
-						body: JSON.stringify({sd_model_checkpoint:modelfilename}),
-					})
+      //we have to always ensure the correct model is loaded. so we force a switch before each request!
+
+      msginfo("Switching models to " + modelfilename);
+      fetch(localsettings.a1111_base_url + a1111_options_endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sd_model_checkpoint: modelfilename }),
+      })
         .then(y => y.json())
         .then(resp => {
-          dbglog("Model switch completed");          
-          onDone();
+          dbglog("Model switch completed, wait 1s");
+          setTimeout(() => {
+            current_loaded_model = modelfilename;
+            onDone();
+          }, 1000);
         }).catch((error) => {
-          disconnect();
-          msginfo(error);
-          a1111_connection_status = ConnStatus.Error;
-          render_status();
+          ++errorsencountered;
+          msginfo("Switch Models Error: " + error, true);
+          onDone();
         });
-      }else{
-        dbglog("No models switched, already using " + modelfilename );
-        onDone();
-      }
+
     }
     
     //deconstruct a stable horde request payload, and generate with a1111
@@ -490,7 +586,7 @@
       let splits = req_payload.payload.prompt.split("###");
       let prompt = splits[0];
       let negprompt = (splits.length>1?splits[1]:"");
-      let parsedseed = ((req_payload.payload.seed==null||req_payload.payload.seed=="")?-1:parseInt(req_payload.seed));
+      let parsedseed = ((req_payload.payload.seed==null||req_payload.payload.seed=="")?-1:parseInt(req_payload.payload.seed));
       let postprocess = (req_payload.payload.post_processing!=null&&req_payload.payload.post_processing.includes("GFPGAN"));
       let sampler = map_sampler(req_payload.payload.sampler_name+(req_payload.payload.karras?"_ka":""));
           
@@ -523,7 +619,7 @@
         msginfo("Generating txt2img...");
         dbglog(a1111_t2i_payload);
 
-        fetch(a1111_base_url+a1111_txt2img_endpoint, {
+        fetch(localsettings.a1111_base_url+a1111_txt2img_endpoint, {
 						method: 'POST', 
 						headers: {
 							'Content-Type': 'application/json',							
@@ -535,22 +631,13 @@
 
           msginfo("Generation completed, relaying response...");  
           dbglog(resp);          
-          onImagesDone(resp.images);          
+          onImagesDone(resp.images);
          
         }).catch((error) => {
           dbglog(error);
           ++errorsencountered;
-          msginfo("Encountered an error during generation!\n"+error);
-          if(errorsencountered>=stopaftererrors)
-          {
-            onImagesDone(null);
-            disconnect();
-            msginfo("Too many errors, disconnecting worker.");
-            a1111_connection_status = ConnStatus.Error;
-            render_status();
-          }else{
-            onImagesDone(null);
-          }
+          msginfo("Generation Error: "+error, true);
+          onImagesDone(null);          
         });
 
       });
@@ -558,18 +645,19 @@
 
     function save_settings()
     {
-      a1111_base_url = document.getElementById("a1111url").value;
-      workername = document.getElementById("workername").value;
-      allownsfw = (document.getElementById("allownsfw").checked?true:false);
-      allowunsafeip = (document.getElementById("allowunsafeip").checked?true:false);
-      allowimg2img = (document.getElementById("allowimg2img").checked?true:false);
-      allowpainting = (document.getElementById("allowpainting").checked?true:false);
-      allowpostprocessing = (document.getElementById("allowpostprocessing").checked?true:false);
-      apikey = document.getElementById("apikey").value; 
+      localsettings.a1111_base_url = document.getElementById("a1111url").value;
+      localsettings.horde_base_url = document.getElementById("hordeurl").value;
+      localsettings.workername = document.getElementById("workername").value;
+      localsettings.allownsfw = (document.getElementById("allownsfw").checked?true:false);
+      localsettings.allowunsafeip = (document.getElementById("allowunsafeip").checked?true:false);
+      localsettings.allowimg2img = (document.getElementById("allowimg2img").checked?true:false);
+      localsettings.allowpainting = (document.getElementById("allowpainting").checked?true:false);
+      localsettings.allowpostprocessing = (document.getElementById("allowpostprocessing").checked?true:false);
+      localsettings.apikey = document.getElementById("apikey").value; 
       let mp = parseInt(document.getElementById("maxpixels").value);
       mp = ((isNaN(mp)||mp<=0)?262144:mp);
-      maxpixels = mp;
-      document.getElementById("maxpixels").value = maxpixels;
+      localsettings.maxpixels = mp;
+      document.getElementById("maxpixels").value = localsettings.maxpixels;
 
       for(var i=0;i<localmodels.length;++i)
       {
@@ -580,11 +668,14 @@
       }
 
       try {
-        priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
+        localsettings.priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
       } catch (e) {
         document.getElementById("priority_usernames").value = "[]";
-        priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
+        localsettings.priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
       }
+
+      localsettings.persistsettings = document.getElementById("persistsettings").checked?true:false;
+      localStorage.setItem("hordeautowebworker_settings",JSON.stringify(localsettings));      
     
     }
 
@@ -602,7 +693,7 @@
       {
         if(localmodels[i].shared)
         {
-          mlist.push(localmodels[i].name);
+          mlist.push(localmodels[i].name.substring(0,29));
         }
       }
       return mlist;
@@ -618,35 +709,44 @@
         {
           //someone has started a new session elsewhere. We must disconnect
           disconnect();
-          msginfo("Another Worker Instance was started, so this one stopped.\nYou should only run one worker instance at a time.");
-        } else {
-          if (current_task_id == null && !currently_polling) {
+          msginfo("Another Worker Instance was started, so this one stopped. You should only run one worker instance at a time.", true);
+        } 
+        else if(errorsencountered>=stopaftererrors)
+        {
+          disconnect();
+          msginfo("Too many errors! Disconnecting worker.", true);
+          a1111_connection_status = ConnStatus.Error;
+          horde_connection_status = ConnStatus.Error;
+        }
+        else {
+          if (current_task_id == null && !currently_polling && !workerpaused) {
 
             let pop_payload = {
-              "name": workername,
-              "priority_usernames": priority_usernames,
-              "nsfw": allownsfw,
+              "name": (workerprefix+localsettings.workername),
+              "priority_usernames": localsettings.priority_usernames,
+              "nsfw": localsettings.allownsfw,
               "blacklist": [],
-              "models": [], //prepare_model_list()
-              "bridge_version": 1,
+              "models": prepare_model_list(),
+              "bridge_version": 7,
               "threads": 1,
-              "max_pixels": maxpixels,
-              "allow_img2img": false, //todo: change later
-              "allow_painting": false,
-              "allow_unsafe_ipaddr": allowunsafeip, //conflicting names
-              "allow_unsafe_ip": allowunsafeip,
-              "allow_post_processing": allowpostprocessing,
+              "max_pixels": localsettings.maxpixels,
+              "allow_img2img": localsettings.allowimg2img, 
+              "allow_painting": localsettings.allowpainting,
+              "allow_unsafe_ipaddr": localsettings.allowunsafeip, //conflicting names
+              "allow_unsafe_ip": localsettings.allowunsafeip,
+              "allow_post_processing": localsettings.allowpostprocessing,
               "require_upfront_kudos": false
             };
 
             let pop_payload_str = JSON.stringify(pop_payload);
             dbglog("Polling for jobs... " + pop_payload_str);
             currently_polling = true;
-            fetch(stablehorde_pop_endpoint, {
+            fetch(localsettings.horde_base_url+stablehorde_pop_endpoint, {
               method: 'POST', // or 'PUT'
               headers: {
-                'apikey': apikey,
+                'apikey': localsettings.apikey,
                 'Client-Agent': client_agent,
+                'Content-Type': 'application/json',
               },
               body: pop_payload_str,
             })
@@ -657,13 +757,14 @@
 
               if (popdata.id) {
                 current_task_id = popdata.id;
+                job_time_start = new Date();
                 msginfo("Starting new task: " + current_task_id);
                 dbglog(popdata);
                 generate_image(popdata,(imgs)=>{
                   if(imgs && imgs.length>0)
                   {      
                     //respond with generated images, then set current_task_id to null
-                    var submit_payload = {
+                    let submit_payload = {
                       "id": current_task_id,
                       "generation": imgs[0],
                       "seed": popdata.payload.seed,
@@ -672,42 +773,52 @@
 
                     dbglog(submit_payload);
 
-                    fetch(stablehorde_submit_endpoint, {
+                    fetch(localsettings.horde_base_url+stablehorde_submit_endpoint, {
                       method: 'POST', // or 'PUT'
                       headers: {
-                        'apikey': apikey,
+                        'apikey': localsettings.apikey,
                         'Client-Agent': client_agent,
+                        'Content-Type': 'application/json',
                       },
-                      body: submit_payload,
+                      body: JSON.stringify(submit_payload),
                     })
                     .then(y => y.json())
                     .then(completed => {
-
+                      dbglog(completed);
                       //generation submitted
                       let rw = completed.reward;
                       if(rw)
                       {
-                        msginfo("Generation Submitted Successfully!\nKudos Earned: " +rw);
-                        //todo: increment counters
+                        msginfo("Generation Submitted Successfully! Kudos Earned: " +rw);
+                        sessionkudos += parseFloat(rw);
+                        ++jobsdone;
+                        lasttasktime = new Date();
+                        lasttasktimetaken = (lasttasktime - job_time_start)/1000;
 
                       }else{
-                        msginfo("Generation Was Rejected!\nReason: " +completed.message);
+                        ++errorsencountered;
+                        msginfo("Generation Was Rejected! Reason: " +completed.message, true);
                       }
-                      //current_task_id =  null;
-                      disconnect();
+                      current_task_id = null;                      
 
                     }).catch((error) => {
-
-                      //todo: don't disconnect immediately. allow a few retries
-
-                      disconnect();
-                      msginfo(error);
-                      horde_connection_status = ConnStatus.Error;
-                      render_status();
+                      ++errorsencountered;
+                      current_task_id = null; 
+                      msginfo("Error Submitting Generation: " + error, true);
                     });
 
+                    if(dbgplus)
+                    {
+                      //print out generation info
+                      document.getElementById("dbgplusinfo").innerText = JSON.stringify(popdata);
+                      let i1 = "data:image/jpeg;base64," + submit_payload.generation;
+                      document.getElementById("dbgplusimg1").src = i1;
+                    }
+
                   }else{
+                    ++errorsencountered;
                     current_task_id = null; //failed task, abandon
+                    msginfo("Generate Image Failed: " + error, true);
                   }
                   
                 });
@@ -715,18 +826,19 @@
                 msginfo("No new jobs available...");
               }
             }).catch((error) => {
-
-              //todo: don't disconnect immediately. allow a few retries
-
-              disconnect();
-              msginfo(error);
-              horde_connection_status = ConnStatus.Error;
-              render_status();
+              currently_polling = false;
+              ++errorsencountered;
+              msginfo("Pop Data Error: " + error, true);
             });
 
           } else {
             //only do one task at a time
-            dbglog("Worker is busy serving...");
+            if(current_task_id != null)
+            {
+              dbglog("Worker is busy with "+current_task_id+"...");
+            }else{
+              dbglog("Worker is waiting for poll response...");
+            }
           }
         
         }
@@ -734,12 +846,37 @@
       } else {
         dbglog("Poll worker disconnected");
       }
+
+      ++update_perf_data_counter;
+      if(update_perf_data_counter>5)
+      {
+        update_perf_data_counter = 0;
+        update_perf_data();
+      }
     }
 
-    function msginfo(str)
+    var msginfolog = []; //store last 3 messages
+    function msginfo(str,isErr=false)
     {
       dbglog("msginfo: " + str);
-      document.getElementById("msginfo").innerText = str;
+      msginfolog.push({m:str,err:isErr});
+      if(msginfolog.length>3)
+      {
+        msginfolog.shift();
+      }
+
+      let combined = "";
+      for(var i=0;i<msginfolog.length;++i)
+      {
+        let cur = msginfolog[i];
+        let cm = (cur.err?"<span class=\"color_red\">"+cur.m+"</span>":cur.m);
+        if(i+1==msginfolog.length)
+        {
+          cm = "<b>"+cm+"</b>";
+        }
+        combined += cm + "<br>";
+      }
+      document.getElementById("msginfo").innerHTML = combined;
     }
 
     function render_status()
@@ -784,17 +921,29 @@
       if(horde_connection_status == ConnStatus.Connected)
       {
         var newinfo = 
-         `Total Workers in Horde: `+horde_perfinfo.worker_count+`<br>
-          Pending Requests in Horde: `+horde_perfinfo.queued_requests+`<br><br>
+         `<span class="color_blue">Total Workers in Horde:</span> `+horde_perfinfo.worker_count+`<br>
+          <span class="color_blue">Pending Requests in Horde:</span> `+horde_perfinfo.queued_requests+`<br>
+          <span class="color_blue">Username:</span> `+horde_userdata.username+`<br>
+          <span class="color_blue">Worker Name:</span> `+(workerprefix+localsettings.workername)+`<br>
+          <span class="color_blue">Starting Kudos:</span> `+(parseFloat(horde_userdata.kudos)).toFixed(1)+`<br><br>
 
-          Username: `+horde_userdata.username+`<br>
-          Worker Name: `+workername+` (Active: `+horde_userdata.worker_count+`)<br>            
-          Session Uptime: `+(new Date()-session_uptime_start)/1000+`s<br>
-          Requests Fulfilled: `+jobsdone+`<br>
-          Kudos Generated: (Total: `+horde_userdata.kudos+`, Session: `+sessionkudos+`)<br>
-          Last Task Time: ` + (lasttasktime==null?"None":lasttasktime) + ` (took `+lasttasktimetaken+`ms)<br>
-          Errors Encountered: `+errorsencountered;
+          <span class="color_blue">Session Uptime:</span> `+((new Date()-session_uptime_start)/1000).toFixed(1)+`s<br>
+          <span class="color_blue">Last Job Time:</span> ` + (lasttasktime==null?"None":lasttasktime.toLocaleTimeString()) + ` (took `+lasttasktimetaken.toFixed(1)+`s)<br>
+          <span class="color_blue">Requests Fulfilled:</span> `+jobsdone+`<br>
+          <span class="color_blue">Kudos Generated:</span> `+sessionkudos.toFixed(1)+`<br>          
+          <span class="color_blue">Errors Encountered:</span> `+errorsencountered;
           document.getElementById("workerinfo").innerHTML = newinfo;
+      }
+
+      if(workerpaused)
+      {
+        document.getElementById("togglepause").innerText = "Unpause Web Worker";
+        document.getElementById("togglepause").classList.remove("bg_orange");
+        document.getElementById("togglepause").classList.add("bg_green");
+      }else{
+        document.getElementById("togglepause").innerText = "Pause Web Worker";
+        document.getElementById("togglepause").classList.add("bg_orange");
+        document.getElementById("togglepause").classList.remove("bg_green");
       }
     }
   
@@ -835,13 +984,20 @@
             </p> 
             </div>
           </li>    
-          <li class="list-group-item d-flex justify-content-between lh-sm">
-          
-              <p id="msginfo">Nothing to Report</p>
-            
-          </li>    
-          
-          
+          <li class="list-group-item d-flex justify-content-between lh-sm">          
+              <p style="font-size:15px" id="msginfo">Nothing to Report</p>            
+          </li>  
+         
+          <div id="dbgplus" style="display:none">    
+          <li class="list-group-item d-flex justify-content-between lh-sm" >      
+           <div>
+            <p style="font-size:12px;max-width:32vw;word-wrap: break-word;" id="dbgplusinfo">Extra Debug Info</p>    
+            <img id="dbgplusimg1" width="150" height="150" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC"/>
+            <img id="dbgplusimg2" width="150" height="150" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC"/>
+          </div>      
+          </li> 
+        </div>      
+       
         
 
         </ul>     
@@ -851,35 +1007,42 @@
       <div class="col">
 
         <div class="card p-2" id="connect_panel" style="display: block;">
-          <h4 class="mb-3">Enter A1111 WebUi URL</h4>
-          <div class="input-group">
-            
-            <input id="a1111url" class="form-control" placeholder="Enter A1111 URL (e.g. http://localhost:7860)" value="">
-            
-          </div><br>
-          <button class="w-100 btn btn-primary btn" onclick="connect_to_a1111()">Connect to A1111</button>        
+          <h5 class="">Enter A1111 WebUi URL</h4>
+          <div class="input-group">            
+            <input id="a1111url" class="form-control" placeholder="Enter A1111 URL (e.g. http://localhost:7860)" value="">  
+          </div>
+          <br>
+          <h5 class="">Enter Stable Horde URL</h4>
+          <div class="input-group">  
+            <input id="hordeurl" class="form-control" placeholder="Enter Stable Horde URL (e.g. https://stablehorde.net)" value="">            
+          </div>
+          <div class="form-check mt-3">
+            <input type="checkbox" class="form-check-input" id="persistsettings"> Persist Settings                
+          </div>
+          <button class="w-100 btn btn-primary btn mt-3" onclick="connect_to_a1111()">Connect to A1111</button>        
         </div>
         
         <div class="card p-2" id="setup_panel" style="display: block;">
           <h4 class="mb-3">Worker Config</h4>
-          <div class="row">
-          <div class="col-6">
-            Horde API Key
+        
+          <div class="col-12 mb-2">
+            <span class="">Horde API Key</span>
             <input class="form-control medinput" id="apikey" placeholder="Enter API Key" value="">
           </div>
-          <div class="col-6">
-            Worker Name
-            <input class="form-control medinput" id="workername" placeholder="Enter Worker Name" value="">
+          <div class="col-12 mb-2">           
+            <span class="">Worker Name</span>
+            <br><div class="twogrid">
+            <span id="workerprefix" class="twogridfirst medinput"></span><input class="medinput form-control twogridsecond" id="workername" placeholder="Enter Worker Name" value="" ></div>
           </div>
+          <div class="col-12 mb-2">
+            <span class="">Priority Usernames</span>
+            <input class="form-control medinput" id="priority_usernames" placeholder="['User1','User2']" value="[]">
         </div>
-        <div class="col-12">
-          Priority Usernames
-          <input class="form-control medinput" id="priority_usernames" placeholder="['User1','User2']" value="[]">
-        </div>   
+       
           <hr class="my-3">
          
             <div class="col-12">
-              Select Models To Share
+              <span class="">Select Models To Share</span>
               <div class="form-check" id="choosemodels">
               </div>
               <span style="font-size:12px;display:none;" id="warnmismatch">Models highlighted in <span class="color_red"><b>red</b></span> may be incorrectly named. Please double check.</span>
@@ -912,17 +1075,6 @@
             </div>
           </div>
             
-             
-
-             <!-- <div class="col-md-6">
-              Poll Interval
-              <select class="form-select" id="country" required>
-                <option value="3">3s (Fast)</option>
-                <option value="5">5s (Med)</option>
-                <option value="10">10s (Slow)</option>
-              </select>             
-            </div> --> 
-          
 
           <br>
           <button class="w-100 btn btn-primary btn" onclick="connect_to_horde()">Start Web Worker</button>
@@ -936,6 +1088,7 @@
             </div>
             <br>
             <p>Thank you for your contribution!</p>
+            <button class="w-100 btn btn-primary btn bg_orange mb-2" id="togglepause" onclick="togglepause()">Pause Web Worker</button>
             <button class="w-100 btn btn-primary btn bg_red" onclick="disconnect()">Stop Web Worker</button>
          </div>
         
