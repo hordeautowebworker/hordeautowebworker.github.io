@@ -60,6 +60,16 @@
     [list]::-webkit-calendar-picker-indicator {
     opacity: 0;
     }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    /* Firefox */
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
 
     .smallinput
     {
@@ -88,6 +98,37 @@
       Error: 3
     };
 
+    const samplermaps = 
+    {
+      "k_lms":"LMS", 
+      "k_heun":"Heun", 
+      "k_euler":"Euler", 
+      "k_euler_a":"Euler a", 
+      "k_dpm_2":"DPM2", 
+      "k_dpm_2_a":"DPM2 a", 
+      "k_dpm_fast":"DPM fast", 
+      "k_dpm_adaptive":"DPM adaptive", 
+      "k_dpmpp_2s_a":"DPM++ 2S a", 
+      "k_dpmpp_2m":"DPM++ 2M", 
+      "dpmsolver":"DPM++ SDE",
+      "k_lms_ka":"LMS Karras", 
+      "k_heun_ka":"Heun", 
+      "k_euler_ka":"Euler", 
+      "k_euler_a_ka":"Euler a", 
+      "k_dpm_2_ka":"DPM2 Karras", 
+      "k_dpm_2_a_ka":"DPM2 a Karras", 
+      "k_dpm_fast_ka":"DPM fast", 
+      "k_dpm_adaptive_ka":"DPM adaptive", 
+      "k_dpmpp_2s_a_ka":"DPM++ 2S a Karras", 
+      "k_dpmpp_2m_ka":"DPM++ 2M Karras", 
+      "dpmsolver_ka":"DPM++ SDE Karras",
+    };
+    function map_sampler(str)
+    {
+      if(!samplermaps[str]){return "Euler a";}
+      return samplermaps[str];
+    }
+
     var modelmaps = [{'name': 'stable_diffusion_2.1', 'file': 'model_2_1.ckpt'}, {'name': 'stable_diffusion_2.0', 'file': 'model_2_0.ckpt'}, {'name': 'stable_diffusion', 'file': 'model_1_5.ckpt'}, {'name': 'stable_diffusion_1.4', 'file': 'model.ckpt'}, {'name': 'waifu_diffusion', 'file': 'waifu-diffusion.ckpt'}, {'name': 'Furry Epoch', 'file': 'furry-diffusion.ckpt'}, {'name': 'Yiffy', 'file': 'yiffy.ckpt'}, {'name': 'Zack3D', 'file': 'Zack3D.ckpt'}, {'name': 'trinart', 'file': 'trinart.ckpt'}, {'name': 'colorbook', 'file': 'colorbook.ckpt'}, {'name': 'Arcane Diffusion', 'file': 'arcane_diffusion.ckpt'}, {'name': 'Squishmallow Diffusion', 'file': 'squishmallow_diffusion.ckpt'}, {'name': 'Spider-Verse Diffusion', 'file': 'spider-verse_diffusion.ckpt'}, {'name': 'Archer Diffusion', 'file': 'archer_diffusion.ckpt'}, {'name': 'Elden Ring Diffusion', 'file': 'elden_ring_diffusion.ckpt'}, {'name': 'Robo-Diffusion', 'file': 'robo_diffusion.ckpt'}, {'name': 'mo-di-diffusion', 'file': 'mo-di-diffusion.ckpt'}, {'name': 'Classic Animation Diffusion', 'file': 'classic-anim-diffusion.ckpt'}, {'name': 'Xynthii-Diffusion', 'file': 'xynthii_fp16.ckpt'}, {'name': 'Comic-Diffusion', 'file': 'comic-diffusion-v2.ckpt'}, {'name': 'Tron Legacy Diffusion', 'file': 'Tron-Legacy-Style-trnlgcy.ckpt'}, {'name': 'Microworlds', 'file': 'microworld_PublicPrompts.ckpt'}, {'name': 'Zeipher Female Model', 'file': 'f222.ckpt'}, {'name': 'Redshift Diffusion', 'file': 'redshift.ckpt'}, {'name': 'Borderlands', 'file': 'borderlands.ckpt'}, {'name': 'Cyberpunk Anime Diffusion', 'file': 'Cyberpunk-Anime-Diffusion.ckpt'}, {'name': 'Midjourney Diffusion', 'file': 'mdjrny-v4.ckpt'}, {'name': 'Papercut Diffusion', 'file': 'PaperCut_v1.ckpt'}, {'name': 'AIO Pixel Art', 'file': 'AIO-Pixel-Art.ckpt'}, {'name': 'JWST Deep Space Diffusion', 'file': 'JWST-Deep-Space.ckpt'}, {'name': 'App Icon Diffusion', 'file': 'app-icon-diffusion-2k.ckpt'}, {'name': 'Mega Merge Diffusion', 'file': 'mega-merge-diffusion-a.ckpt'}, {'name': 'Voxel Art Diffusion', 'file': 'VoxelArt_v1.ckpt'}, {'name': 'Van Gogh Diffusion', 'file': 'Van-Gogh-Diffusion.ckpt'}, {'name': 'Anything Diffusion', 'file': 'Anything-Diffusion-v3.ckpt'}, {'name': 'BubblyDubbly', 'file': 'bubblydubbly_7k.ckpt'}, {'name': 'Dungeons and Diffusion', 'file': 'Dungeons-and-Diffusion-30k.ckpt'}, {'name': 'Clazy', 'file': 'clazy2600.ckpt'}, {'name': 'Nitro Diffusion', 'file': 'nitroDiffusion.ckpt'}, {'name': 'Samdoesarts Ultmerge', 'file': 'samdoesarts_ultmerge.ckpt'}, {'name': 'Synthwave', 'file': 'synthwave.ckpt'}, {'name': 'vectorartz', 'file': 'Vectorartz.ckpt'}, {'name': 'Ranma Diffusion', 'file': 'ranma_diffusion.ckpt'}, {'name': 'Ghibli Diffusion', 'file': 'ghibli-diffusion.ckpt'}, {'name': 'Hentai Diffusion', 'file': 'hentai-diffusion.ckpt'}, {'name': 'Guohua Diffusion', 'file': 'guohua-diffusion.ckpt'}, {'name': 'Inkpunk Diffusion', 'file': 'inkpunk-diffusion.ckpt'}, {'name': 'Fantasy Card Diffusion', 'file': 'fantasy-card-diffusion.ckpt'}, {'name': 'Knollingcase', 'file': 'knollingcase.ckpt'}, {'name': 'Midjourney PaintArt', 'file': 'mdjrny-pntrt.ckpt'}, {'name': 'RPG', 'file': 'rpg.ckpt'}, {'name': 'Poison', 'file': 'poison.ckpt'}, {'name': 'Eimis Anime Diffusion', 'file': 'eimis_anime-diffusion.ckpt'}, {'name': 'Wavyfusion', 'file': 'wavyfusion.ckpt'}, {'name': 'Dawgsmix', 'file': 'biggdawgs_mix.ckpt'}, {'name': 'Papercutcraft', 'file': 'papercutcraft.ckpt'}, {'name': 'kurzgesagt', 'file': 'kurzgesagt-style-v1.ckpt'}, {'name': 'ChromaV5', 'file': 'chromav5.ckpt'}, {'name': 'Dreamlike Diffusion', 'file': 'dreamlike-diffusion.ckpt'}, {'name': 'Analog Diffusion', 'file': 'analog-diffusion.ckpt'}, {'name': 'Asim Simpsons', 'file': 'asim-simpsons.ckpt'}, {'name': 'Funko Diffusion', 'file': 'funko-diffusion.ckpt'}, {'name': 'Double Exposure Diffusion', 'file': 'dublex-diffusion.ckpt'}, {'name': 'Microscopic', 'file': 'microscopic-diffusion.ckpt'}, {'name': 'Balloon Art', 'file': 'balloonart-diffusion.ckpt'}, {'name': 'Future Diffusion', 'file': 'future-diffusion.ckpt'}, {'name': 'Seek.art MEGA', 'file': 'seek-art-mega.ckpt'}, {'name': 'Valorant Diffusion', 'file': 'valorant-diffusion.ckpt'}, {'name': 'Hassanblend', 'file': 'hassanblend.ckpt'}, {'name': 'ACertainThing', 'file': 'ACertainThing.ckpt'}, {'name': 'GTA5 Artwork Diffusion', 'file': 'GTA5_Artwork_Diffusion.ckpt'}, {'name': 'Trinart Characters', 'file': 'Trinart_Characters.ckpt'}, {'name': 'Smoke Diffusion', 'file': 'Smoke_Diffusion.ckpt'}, {'name': 'Supermarionation', 'file': 'Supermarionation.ckpt'}, {'name': 'Dreamlike Photoreal', 'file': 'Dreamlike_Photoreal.ckpt'}, {'name': 'PortraitPlus', 'file': 'PortraitPlus.ckpt'}, {'name': 'Vintedois Diffusion', 'file': 'Vintedois_Diffusion.ckpt'}, {'name': 'Darkest Diffusion', 'file': 'Darkest_Diffusion.ckpt'}];
 
     //add some extra models based on huggingface filenames for searching, but don't display these
@@ -106,51 +147,104 @@
     var a1111_base_url = "http://localhost:7860";
     var a1111_models_endpoint = "/sdapi/v1/sd-models";
     var a1111_options_endpoint = "/sdapi/v1/options";
+    var a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
 
     var client_agent = "HordeAutoWebWorker:1";
     var apikey = "0000000000";
     var stablehorde_finduser_endpoint = "https://stablehorde.net/api/v2/find_user";
     var stablehorde_perf_endpoint = "https://stablehorde.net/api/v2/status/performance";
+    var stablehorde_pop_endpoint = "https://stablehorde.net/api/v2/generate/pop";
+    var stablehorde_submit_endpoint = "https://stablehorde.net/api/v2/generate/submit";
 
     var a1111_connection_status = ConnStatus.Disconnected;
     var horde_connection_status = ConnStatus.Disconnected;
     var current_loaded_model = "";
-    var localmodels = []; //stores an array of locally available models, along with the names to show on horde {name:name, file:file}
+    var localmodels = []; //stores an array of locally available models, along with the names to show on horde {name:name, file:file, shared:true}
     var workername = "HordeAutoWebWorker" + Math.floor(Math.random()*8999 + 1000);
-    var allownsfw = true;
+    var allownsfw = true; //note that although we express a preference to avoid nsfw, we cannot guarantee it as we dont have the model to detect nsfw images
     var allowunsafeip = true;
-    var priority_usernames = "[]";
+    var allowimg2img = true;
+    var allowpainting = true;
+    var allowpostprocessing = false;
+    var priority_usernames = [];
     var maxpixels = 262144;
 
+    var preventmultisessionguid = Math.floor(Math.random()*999999);
     var horde_userdata = {};
     var horde_perfinfo = {};
     var session_uptime_start = new Date();
     var jobsdone = 0;
     var sessionkudos = 0;
     var lasttasktime = null;
-    var lasttasktimetaken = 0;
-    var preventmultisessionguid = Math.floor(Math.random()*999999);    
+    var lasttasktimetaken = 0;   
+    var errorsencountered = 0; 
+    var stopaftererrors = 5; //on 5 errors, disconnect  
+    var current_task_id = null;
+    var currently_polling = false;
    
+    function dbglog(obj)
+    {
+      console.log(obj);
+    }
+
     function init()
     {
-      console.log("Init started");
-      document.getElementById("connect_panel").style.display = "block";
-      document.getElementById("setup_panel").style.display = "none";
-      document.getElementById("worker_panel").style.display = "none";
+      dbglog("Init started");
+      //load settings
       document.getElementById("a1111url").value = a1111_base_url;
       document.getElementById("workername").value = workername;
       document.getElementById("allownsfw").checked = allownsfw;
       document.getElementById("allowunsafeip").checked = allowunsafeip;
+      document.getElementById("allowimg2img").checked = allowimg2img;
+      document.getElementById("allowpainting").checked = allowpainting;
+      document.getElementById("allowpostprocessing").checked = allowpostprocessing;
       document.getElementById("apikey").value = apikey;
-      document.getElementById("priority_usernames").value = priority_usernames;
-      document.getElementById("maxpixels").value = maxpixels;      
-       //start the polling script for the worker checking every 2s
-       setInterval(poll_worker, 2000);
-      render_status();      
+      document.getElementById("priority_usernames").value = JSON.stringify(priority_usernames);
+      let mp = parseInt(maxpixels);
+      document.getElementById("maxpixels").value = ((isNaN(mp)||mp<=0)?262144:mp);    
+
+      //start the polling script for the worker checking every 4s
+      setInterval(poll_worker, 4000);
+
+      reset_vars();
+      disconnect();
+    }
+
+    function reset_vars()
+    {     
+      preventmultisessionguid = Math.floor(Math.random()*999999);
+      horde_userdata = {};
+      horde_perfinfo = {};
+      session_uptime_start = new Date();
+      jobsdone = 0;
+      sessionkudos = 0;
+      lasttasktime = null;
+      lasttasktimetaken = 0;     
+      current_task_id = null;  
+      currently_polling = false;
+      errorsencountered = 0;    
+    }
+
+    //from the request from horde, find our own local mapping
+    function find_local_modelinfo(hordename)
+    {
+      if(hordename!=null)
+      {
+        for(var i=0;i<localmodels.length;++i)
+        {
+          if(hordename.toLowerCase()==localmodels[i].name.toLowerCase())
+          {
+            return localmodels[i];
+          }
+        }
+      }
+      //if we failed to find, just use the first model, but show a warning
+      msginfo("Warning: Requested model "+hordename+" was not found locally! Returning default.")
+      return localmodels[0];
     }
 
     //from the ckpt filename, try to find the model name used in horde
-    function find_model(filename)
+    function find_horde_modelinfo(filename)
     {
       //if failed to find, return empty
       let cleanfname = filename.replace(/ |_|-|\./g,'').toLowerCase();
@@ -163,7 +257,7 @@
         if(cleanfname == cleanmatch1 || cleanfname==cleanmatch2)
         {
           //found a match, return the horde name
-          return modelmaps[i].name;
+          return modelmaps[i];
         }
       }
 
@@ -175,10 +269,10 @@
         if(cleanfname.includes(cleanmatch1) || cleanfname.includes(cleanmatch2))
         {
           //found a match, return the horde name
-          return augmentedmaps[i].name;
+          return augmentedmaps[i];
         }
       }
-      return "";
+      return null;
     }
 
     function validate_models()
@@ -186,9 +280,9 @@
       let mislabel = false;
       for(var i=0;i<localmodels.length;++i)
       {
-        let curr =  document.getElementById("mdlname"+i);
-        let foundmdl = find_model(curr.value);
-        if(foundmdl=="")
+        let curr =  document.getElementById("mdlname"+i);        
+        let foundmdl = find_horde_modelinfo(curr.value);
+        if(foundmdl==null)
         {
           curr.style.color = "black";
           if (curr.value != "") {
@@ -198,7 +292,7 @@
         }
         else
         {
-          curr.value = foundmdl;
+          curr.value = foundmdl.name;
           curr.style.color = "black";
         }
       }
@@ -214,6 +308,8 @@
     {
       a1111_connection_status = ConnStatus.Disconnected;
       horde_connection_status = ConnStatus.Disconnected;
+      current_task_id = null;
+      currently_polling = false;
       msginfo("Worker Stopped");
       render_status();
       document.getElementById("connect_panel").style.display = "block";
@@ -246,7 +342,7 @@
           a1111_connection_status = ConnStatus.Connected;
 
           current_loaded_model = optionsdata.sd_model_checkpoint;
-          console.log("Current model loaded: " + current_loaded_model);
+          dbglog("Current model loaded: " + current_loaded_model);
 
           //repopulate our model list
           localmodels = [];
@@ -260,7 +356,7 @@
           let mdllist = document.getElementById("choosemodels");
           for(var i=0;i<modelsdata.length;++i)
           { 
-            localmodels.push({name:modelsdata[i].title,file:modelsdata[i].title});
+            localmodels.push({name:modelsdata[i].title,file:modelsdata[i].title, shared:true});
             let dotpos = modelsdata[i].title.lastIndexOf(".");
             let trimname = modelsdata[i].title;
             if(dotpos>0)
@@ -282,11 +378,13 @@
           document.getElementById("worker_panel").style.display = "none";         
 
           }).catch((error) => {
+            disconnect();
             msginfo(error);
             a1111_connection_status = ConnStatus.Error;
             render_status();
           });
         }).catch((error) => {
+          disconnect();
           msginfo(error);
           a1111_connection_status = ConnStatus.Error;
           render_status();
@@ -296,6 +394,12 @@
     function connect_to_horde()
     {
       save_settings();
+      var ml = prepare_model_list();
+      if(ml.length==0)
+      {
+        msginfo("You must share at least 1 model!");
+      }else{
+
       horde_connection_status = ConnStatus.Connecting;
       msginfo("Getting Workers...");
       fetch(stablehorde_perf_endpoint)
@@ -315,12 +419,11 @@
 
           if (userdata.username && userdata.username != "") {
 
+            reset_vars();
             horde_perfinfo = perfdata;
             horde_userdata = userdata;
             horde_connection_status = ConnStatus.Connected;
-            session_uptime_start = new Date();
-            jobsdone = 0;
-            sessionkudos = 0;
+       
             msginfo("Awaiting First Task...");
             document.getElementById("connect_panel").style.display = "none";
             document.getElementById("setup_panel").style.display = "none";
@@ -334,16 +437,123 @@
           render_status();
 
         }).catch((error) => {
+          disconnect();
           msginfo(error);
           horde_connection_status = ConnStatus.Error;
           render_status();
         });
 
         }).catch((error) => {
+          disconnect();
           msginfo(error);
           horde_connection_status = ConnStatus.Error;
           render_status();
-        });        
+        });     
+      }   
+    }
+
+    function handle_switch_model(modelfilename,onDone)
+    {
+      if(modelfilename!=current_loaded_model)
+      {
+        msginfo("Switching models from " + current_loaded_model + " to " + modelfilename);       
+        fetch(a1111_base_url+a1111_options_endpoint, {
+						method: 'POST', 
+						headers: {
+							'Content-Type': 'application/json',							
+						},
+						body: JSON.stringify({sd_model_checkpoint:modelfilename}),
+					})
+        .then(y => y.json())
+        .then(resp => {
+          dbglog("Model switch completed");          
+          onDone();
+        }).catch((error) => {
+          disconnect();
+          msginfo(error);
+          a1111_connection_status = ConnStatus.Error;
+          render_status();
+        });
+      }else{
+        dbglog("No models switched, already using " + modelfilename );
+        onDone();
+      }
+    }
+    
+    //deconstruct a stable horde request payload, and generate with a1111
+    //onImagesDone is a callback in the form of onImagesDone([b64_1,b64_2,...])
+    //it will return null if there was an error
+    function generate_image(req_payload,onImagesDone)
+    {     
+
+      //split the prompt
+      let splits = req_payload.payload.prompt.split("###");
+      let prompt = splits[0];
+      let negprompt = (splits.length>1?splits[1]:"");
+      let parsedseed = ((req_payload.payload.seed==null||req_payload.payload.seed=="")?-1:parseInt(req_payload.seed));
+      let postprocess = (req_payload.payload.post_processing!=null&&req_payload.payload.post_processing.includes("GFPGAN"));
+      let sampler = map_sampler(req_payload.payload.sampler_name+(req_payload.payload.karras?"_ka":""));
+          
+      //first, if we're using the wrong model, switch the model
+      let desired_model = find_local_modelinfo(req_payload.model);
+      handle_switch_model(desired_model.file,()=>{
+        //next, prepare the payload
+        let a1111_t2i_payload = {         
+          "denoising_strength": req_payload.payload.denoising_strength, 
+          "prompt": prompt, 
+          "seed": parsedseed,    
+          "subseed": req_payload.payload.seed_variation,
+          "sampler_name": sampler,  
+          "batch_size": 1,
+          "n_iter": 1,
+          "steps": req_payload.payload.ddim_steps,
+          "cfg_scale": req_payload.payload.cfg_scale,
+          "width": req_payload.payload.width,
+          "height": req_payload.payload.height,
+          "restore_faces": postprocess,
+          "tiling": false,
+          "negative_prompt": negprompt,
+          "do_not_save_samples":true, //no idea if these work, but just try
+          "do_not_save_grid":true,
+        }
+
+        //remove all null fields
+        a1111_t2i_payload = Object.fromEntries(Object.entries(a1111_t2i_payload).filter(([_, v]) => v != null));
+
+        msginfo("Generating txt2img...");
+        dbglog(a1111_t2i_payload);
+
+        fetch(a1111_base_url+a1111_txt2img_endpoint, {
+						method: 'POST', 
+						headers: {
+							'Content-Type': 'application/json',							
+						},
+						body: JSON.stringify(a1111_t2i_payload),
+					})
+        .then(x => x.json())
+        .then(resp => {
+
+          msginfo("Generation completed, relaying response...");  
+          dbglog(resp);          
+          onImagesDone(resp.images);          
+         
+        }).catch((error) => {
+          dbglog(error);
+          ++errorsencountered;
+          msginfo("Encountered an error during generation!\n"+error);
+          if(errorsencountered>=stopaftererrors)
+          {
+            onImagesDone(null);
+            disconnect();
+            msginfo("Too many errors, disconnecting worker.");
+            a1111_connection_status = ConnStatus.Error;
+            render_status();
+          }else{
+            onImagesDone(null);
+          }
+        });
+
+      });
     }
 
     function save_settings()
@@ -352,15 +562,30 @@
       workername = document.getElementById("workername").value;
       allownsfw = (document.getElementById("allownsfw").checked?true:false);
       allowunsafeip = (document.getElementById("allowunsafeip").checked?true:false);
-      apikey = document.getElementById("apikey").value;
-      priority_usernames = document.getElementById("priority_usernames").value;
-      maxpixels = document.getElementById("maxpixels").value;
+      allowimg2img = (document.getElementById("allowimg2img").checked?true:false);
+      allowpainting = (document.getElementById("allowpainting").checked?true:false);
+      allowpostprocessing = (document.getElementById("allowpostprocessing").checked?true:false);
+      apikey = document.getElementById("apikey").value; 
+      let mp = parseInt(document.getElementById("maxpixels").value);
+      mp = ((isNaN(mp)||mp<=0)?262144:mp);
+      maxpixels = mp;
+      document.getElementById("maxpixels").value = maxpixels;
 
       for(var i=0;i<localmodels.length;++i)
       {
-        let curr =  document.getElementById("mdlname"+i);       
+        let curr =  document.getElementById("mdlname"+i);      
+        let currchk =  document.getElementById("mdlcheck"+i); 
         localmodels[i].name = curr.value;
+        localmodels[i].shared = currchk.checked?true:false;
       }
+
+      try {
+        priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
+      } catch (e) {
+        document.getElementById("priority_usernames").value = "[]";
+        priority_usernames = JSON.parse(document.getElementById("priority_usernames").value);
+      }
+    
     }
 
     //avoid running more than 1 worker from the same browser
@@ -368,6 +593,19 @@
     {
       preventmultisessionguid = Math.floor(Math.random()*999999); 
       localStorage.setItem("hordeautowebworker_preventmulti",preventmultisessionguid);
+    }
+
+    function prepare_model_list()
+    {
+      var mlist = [];
+      for(var i=0;i<localmodels.length;++i)
+      {
+        if(localmodels[i].shared)
+        {
+          mlist.push(localmodels[i].name);
+        }
+      }
+      return mlist;
     }
 
     function poll_worker()
@@ -381,16 +619,126 @@
           //someone has started a new session elsewhere. We must disconnect
           disconnect();
           msginfo("Another Worker Instance was started, so this one stopped.\nYou should only run one worker instance at a time.");
+        } else {
+          if (current_task_id == null && !currently_polling) {
+
+            let pop_payload = {
+              "name": workername,
+              "priority_usernames": priority_usernames,
+              "nsfw": allownsfw,
+              "blacklist": [],
+              "models": [], //prepare_model_list()
+              "bridge_version": 1,
+              "threads": 1,
+              "max_pixels": maxpixels,
+              "allow_img2img": false, //todo: change later
+              "allow_painting": false,
+              "allow_unsafe_ipaddr": allowunsafeip, //conflicting names
+              "allow_unsafe_ip": allowunsafeip,
+              "allow_post_processing": allowpostprocessing,
+              "require_upfront_kudos": false
+            };
+
+            let pop_payload_str = JSON.stringify(pop_payload);
+            dbglog("Polling for jobs... " + pop_payload_str);
+            currently_polling = true;
+            fetch(stablehorde_pop_endpoint, {
+              method: 'POST', // or 'PUT'
+              headers: {
+                'apikey': apikey,
+                'Client-Agent': client_agent,
+              },
+              body: pop_payload_str,
+            })
+            .then(x => x.json())
+            .then(popdata => {
+
+              currently_polling = false;
+
+              if (popdata.id) {
+                current_task_id = popdata.id;
+                msginfo("Starting new task: " + current_task_id);
+                dbglog(popdata);
+                generate_image(popdata,(imgs)=>{
+                  if(imgs && imgs.length>0)
+                  {      
+                    //respond with generated images, then set current_task_id to null
+                    var submit_payload = {
+                      "id": current_task_id,
+                      "generation": imgs[0],
+                      "seed": popdata.payload.seed,
+                      "censored": false
+                    };
+
+                    dbglog(submit_payload);
+
+                    fetch(stablehorde_submit_endpoint, {
+                      method: 'POST', // or 'PUT'
+                      headers: {
+                        'apikey': apikey,
+                        'Client-Agent': client_agent,
+                      },
+                      body: submit_payload,
+                    })
+                    .then(y => y.json())
+                    .then(completed => {
+
+                      //generation submitted
+                      let rw = completed.reward;
+                      if(rw)
+                      {
+                        msginfo("Generation Submitted Successfully!\nKudos Earned: " +rw);
+                        //todo: increment counters
+
+                      }else{
+                        msginfo("Generation Was Rejected!\nReason: " +completed.message);
+                      }
+                      //current_task_id =  null;
+                      disconnect();
+
+                    }).catch((error) => {
+
+                      //todo: don't disconnect immediately. allow a few retries
+
+                      disconnect();
+                      msginfo(error);
+                      horde_connection_status = ConnStatus.Error;
+                      render_status();
+                    });
+
+                  }else{
+                    current_task_id = null; //failed task, abandon
+                  }
+                  
+                });
+              } else {
+                msginfo("No new jobs available...");
+              }
+            }).catch((error) => {
+
+              //todo: don't disconnect immediately. allow a few retries
+
+              disconnect();
+              msginfo(error);
+              horde_connection_status = ConnStatus.Error;
+              render_status();
+            });
+
+          } else {
+            //only do one task at a time
+            dbglog("Worker is busy serving...");
+          }
+        
         }
-        console.log("Polling for task...");
+        render_status();
       } else {
-        console.log("Poll worker disconnected");
+        dbglog("Poll worker disconnected");
       }
     }
 
     function msginfo(str)
     {
-      console.log("msginfo: " + str);
+      dbglog("msginfo: " + str);
       document.getElementById("msginfo").innerText = str;
     }
 
@@ -444,7 +792,8 @@
           Session Uptime: `+(new Date()-session_uptime_start)/1000+`s<br>
           Requests Fulfilled: `+jobsdone+`<br>
           Kudos Generated: (Total: `+horde_userdata.kudos+`, Session: `+sessionkudos+`)<br>
-          Last Task Time: ` + (lasttasktime==null?"None":lasttasktime) + ` (took `+lasttasktimetaken+`ms)<br>`;
+          Last Task Time: ` + (lasttasktime==null?"None":lasttasktime) + ` (took `+lasttasktimetaken+`ms)<br>
+          Errors Encountered: `+errorsencountered;
           document.getElementById("workerinfo").innerHTML = newinfo;
       }
     }
@@ -546,11 +895,20 @@
               <div class="form-check">
                 <input type="checkbox" class="form-check-input" id="allowunsafeip"> Allow Unsafe IP                
               </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="allowimg2img"> Allow Img2Img                
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="allowpainting"> Allow Painting                
+              </div>
             </div>
 
-            <div class="col-4">
+            <div class="col-6">
               Max Pixels
-              <input class="form-control medinput" id="maxpixels" placeholder="Max Pixels Supported" value="262144">
+              <input class="form-control medinput" type="number" min="1024" max="4194304" step="1024" id="maxpixels" placeholder="Max Pixels Supported" value="262144">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="allowpostprocessing"> Allow Post Processing                
+              </div>
             </div>
           </div>
             
