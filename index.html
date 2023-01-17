@@ -167,7 +167,10 @@
       {'name': 'stable_diffusion_2.1', 'file': 'v2-1_768-ema-pruned'},
       {'name': 'stable_diffusion_2.0', 'file': '768-v-ema'},
       {'name': 'waifu_diffusion', 'file': 'wd-1-4-anime_e1'},
-      {'name': 'Hassanblend', 'file': 'HassanBlend1.5'}
+      {'name': 'waifu_diffusion', 'file': 'wd-1-4-anime_e2'},
+      {'name': 'Hassanblend', 'file': 'HassanBlend1.5'},
+      {'name': 'Midjourney Diffusion', 'file': 'midjourney-v4-diffusion.ckpt'},
+      {'name': 'Seek.art MEGA', 'file': 'seek_art_mega_v1.ckpt'}
     ]);
 
     var a1111_models_endpoint = "/sdapi/v1/sd-models";
@@ -197,7 +200,7 @@
       allowunsafeip: true,
       allowimg2img: true,
       allowpainting: true,
-      allowpostprocessing: false,
+      allowpostprocessing: true,
       priority_usernames: [],
       maxpixels: 262144,
     };
@@ -220,6 +223,8 @@
     var workerpaused = false;
 
     var dbgplus = false;
+
+    const emptyimg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC";
    
     function dbglog(obj)
     {
@@ -235,12 +240,14 @@
 
       //read the url params, enable or disable debugplus
       const urlParams = new URLSearchParams(window.location.search);
-      const dbgparam = urlParams.get('dbgplus');
+      const dbgparam = urlParams.get('dbg');
       if (dbgparam == "1") {
         dbgplus = true;
         msginfo("Debugging Mode Enabled");
         workerprefix = "";
         document.getElementById("dbgplus").style.display = "block";
+        document.getElementById("dbgplusimg1").src = emptyimg;
+        document.getElementById("dbgplusimg2").src = emptyimg;
       }
 
       //load settings
@@ -398,6 +405,7 @@
     function togglepause()
     {
       workerpaused = !workerpaused;
+      msginfo(workerpaused?"Pausing Worker...":"Unpausing Worker...")
       render_status();
     }
 
@@ -577,7 +585,7 @@
     }
     
     //deconstruct a stable horde request payload, and generate with a1111
-    //onImagesDone is a callback in the form of onImagesDone([b64_1,b64_2,...])
+    //onImagesDone is a callback in the form of onImagesDone([b64_1,b64_2,...],seed)
     //it will return null if there was an error
     function generate_image(req_payload,onImagesDone)
     {     
@@ -586,9 +594,11 @@
       let splits = req_payload.payload.prompt.split("###");
       let prompt = splits[0];
       let negprompt = (splits.length>1?splits[1]:"");
-      let parsedseed = ((req_payload.payload.seed==null||req_payload.payload.seed=="")?-1:parseInt(req_payload.payload.seed));
+      let randSeed = Math.floor(Math.random()*99999999);
+      let parsedseed = ((req_payload.payload.seed==null||req_payload.payload.seed==""||req_payload.payload.seed=="-1"||req_payload.payload.seed==-1)?randSeed:parseInt(req_payload.payload.seed));
       let postprocess = (req_payload.payload.post_processing!=null&&req_payload.payload.post_processing.includes("GFPGAN"));
       let sampler = map_sampler(req_payload.payload.sampler_name+(req_payload.payload.karras?"_ka":""));
+      let sourceimg = req_payload.source_image; //for img2img and paint
           
       //first, if we're using the wrong model, switch the model
       let desired_model = find_local_modelinfo(req_payload.model);
@@ -613,10 +623,21 @@
           "do_not_save_grid":true,
         }
 
+        if(sourceimg!=null)
+        {
+          a1111_t2i_payload.init_images = [sourceimg];
+        }
+
         //remove all null fields
         a1111_t2i_payload = Object.fromEntries(Object.entries(a1111_t2i_payload).filter(([_, v]) => v != null));
 
-        msginfo("Generating txt2img...");
+        if(sourceimg==null)
+        {
+          msginfo("Generating txt2img for "+req_payload.id+"...");
+        }else{
+          msginfo("Generating img2img for "+req_payload.id+"...");
+        }
+
         dbglog(a1111_t2i_payload);
 
         fetch(localsettings.a1111_base_url+a1111_txt2img_endpoint, {
@@ -631,13 +652,13 @@
 
           msginfo("Generation completed, relaying response...");  
           dbglog(resp);          
-          onImagesDone(resp.images);
+          onImagesDone(resp.images,parsedseed);
          
         }).catch((error) => {
           dbglog(error);
           ++errorsencountered;
           msginfo("Generation Error: "+error, true);
-          onImagesDone(null);          
+          onImagesDone(null,null);          
         });
 
       });
@@ -760,14 +781,14 @@
                 job_time_start = new Date();
                 msginfo("Starting new task: " + current_task_id);
                 dbglog(popdata);
-                generate_image(popdata,(imgs)=>{
+                generate_image(popdata,(imgs,outSeed)=>{
                   if(imgs && imgs.length>0)
-                  {      
+                  {     
                     //respond with generated images, then set current_task_id to null
                     let submit_payload = {
                       "id": current_task_id,
                       "generation": imgs[0],
-                      "seed": popdata.payload.seed,
+                      "seed": (outSeed?outSeed.toString():popdata.payload.seed),
                       "censored": false
                     };
 
@@ -808,11 +829,19 @@
                     });
 
                     if(dbgplus)
-                    {
+                    {                     
+
                       //print out generation info
                       document.getElementById("dbgplusinfo").innerText = JSON.stringify(popdata);
                       let i1 = "data:image/jpeg;base64," + submit_payload.generation;
                       document.getElementById("dbgplusimg1").src = i1;
+                      if(popdata.source_image!=null)
+                      {
+                        let i2 = "data:image/jpeg;base64," + popdata.source_image;
+                        document.getElementById("dbgplusimg2").src = i2;
+                      }else{
+                        document.getElementById("dbgplusimg2").src = emptyimg;
+                      }
                     }
 
                   }else{
@@ -953,7 +982,8 @@
 <body class="bg-light">    
 <div class="container">
   <main>
-    <div class="py-5 text-center">      
+    <div class="py-5 text-center">
+      <img width="80" height="80" style="border-radius: 20%;" src="data:image/jpeg;base64,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" />
       <h2>HordeAutoWebWorker</h2>
       <p class="lead" style="font-size:1rem">A JS based Stable Horde Worker to bridge Automatic1111 API with Stable Horde API.<br>No extra 20 GB downloads or installs, just click and share your own local models.</p>
       
@@ -991,9 +1021,10 @@
           <div id="dbgplus" style="display:none">    
           <li class="list-group-item d-flex justify-content-between lh-sm" >      
            <div>
+            <img id="dbgplusimg1" width="150" height="150" src=""/>
+            <img id="dbgplusimg2" width="150" height="150" src=""/>
             <p style="font-size:12px;max-width:32vw;word-wrap: break-word;" id="dbgplusinfo">Extra Debug Info</p>    
-            <img id="dbgplusimg1" width="150" height="150" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC"/>
-            <img id="dbgplusimg2" width="150" height="150" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC"/>
+           
           </div>      
           </li> 
         </div>      
