@@ -179,7 +179,7 @@
     const a1111_options_endpoint = "/sdapi/v1/options";
     const a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
     const a1111_img2img_endpoint = "/sdapi/v1/img2img";
-    const client_agent = "HordeAutoWebWorker:1";    
+    const client_agent = "HordeAutoWebWorker:1:Concedo#5013";
     const stablehorde_finduser_endpoint = "/api/v2/find_user";
     const stablehorde_perf_endpoint = "/api/v2/status/performance";
     const stablehorde_pop_endpoint = "/api/v2/generate/pop";
@@ -437,44 +437,50 @@
 
           dbglog(optionsdata);
 
-          msginfo("A1111 Connected Successfully. Please configure worker.");
-
-          a1111_connection_status = ConnStatus.Connected;
-
-          current_loaded_model = optionsdata.sd_model_checkpoint;
-          dbglog("Current model loaded: " + current_loaded_model);
-
-          //repopulate our model list
-          localmodels = [];
-          let selectionhtml = `<table><datalist id="sdmodels">`;
-          for(var i=0;i<modelmaps.length;++i)
+          if(optionsdata.samples_format==null||modelsdata.length==0)
           {
-            selectionhtml += `<option value="`+modelmaps[i].name+`">`;
-          }
-          selectionhtml += `</datalist>`;         
-          let mdllist = document.getElementById("choosemodels");
-          for(var i=0;i<modelsdata.length;++i)
-          { 
-            localmodels.push({name:modelsdata[i].title,file:modelsdata[i].title, shared:true});
-            let dotpos = modelsdata[i].title.lastIndexOf(".");
-            let trimname = modelsdata[i].title;
-            if(dotpos>0)
-            {
-              trimname = trimname.substring(0,dotpos);
-            }
-            selectionhtml += `<tr><td class="col-8" style="font-size: 12px;"><input type="checkbox" name="mdlcheckbox" class="form-check-input" id="mdlcheck`+i+`"> `+trimname+`</td>
-              <td class="col-8">
-                <input list="sdmodels" class="form-control smallinput" id="mdlname`+i+`" placeholder="[Not Shared]" value="`+trimname+`" onblur="validate_models()">
-                </td></tr>`;
-          }
-          selectionhtml += "</table>"
-          mdllist.innerHTML = selectionhtml;
-          validate_models();
+            disconnect();
+            msginfo("Invalid data received or no models found. Is A1111 running at the url"+localsettings.a1111_base_url+"?");
+            a1111_connection_status = ConnStatus.Error;
+            render_status();            
+          } else {
 
-          render_status();
-          document.getElementById("connect_panel").style.display = "none";
-          document.getElementById("setup_panel").style.display = "block";
-          document.getElementById("worker_panel").style.display = "none";         
+            msginfo("A1111 Connected Successfully. Please configure worker.");
+
+            a1111_connection_status = ConnStatus.Connected;
+
+            current_loaded_model = optionsdata.sd_model_checkpoint;
+            dbglog("Current model loaded: " + current_loaded_model);
+
+            //repopulate our model list
+            localmodels = [];
+            let selectionhtml = `<table><datalist id="sdmodels">`;
+            for (var i = 0; i < modelmaps.length; ++i) {
+              selectionhtml += `<option value="` + modelmaps[i].name + `">`;
+            }
+            selectionhtml += `</datalist>`;
+            let mdllist = document.getElementById("choosemodels");
+            for (var i = 0; i < modelsdata.length; ++i) {
+              localmodels.push({ name: modelsdata[i].title, file: modelsdata[i].title, shared: true });
+              let dotpos = modelsdata[i].title.lastIndexOf(".");
+              let trimname = modelsdata[i].title;
+              if (dotpos > 0) {
+                trimname = trimname.substring(0, dotpos);
+              }
+              selectionhtml += `<tr><td class="col-8" style="font-size: 12px;"><input type="checkbox" name="mdlcheckbox" class="form-check-input" id="mdlcheck` + i + `"> ` + trimname + `</td>
+              <td class="col-8">
+                <input list="sdmodels" class="form-control smallinput" id="mdlname`+ i + `" placeholder="[Not Shared]" value="` + trimname + `" onblur="validate_models()">
+                </td></tr>`;
+            }
+            selectionhtml += "</table>"
+            mdllist.innerHTML = selectionhtml;
+            validate_models();
+
+            render_status();
+            document.getElementById("connect_panel").style.display = "none";
+            document.getElementById("setup_panel").style.display = "block";
+            document.getElementById("worker_panel").style.display = "none";
+          }      
 
           }).catch((error) => {
             disconnect();
