@@ -184,6 +184,7 @@
     const stablehorde_perf_endpoint = "/api/v2/status/performance";
     const stablehorde_pop_endpoint = "/api/v2/generate/pop";
     const stablehorde_submit_endpoint = "/api/v2/generate/submit";
+    const stablehorde_workers_endpoint = "/api/v2/workers";
 
     var a1111_connection_status = ConnStatus.Disconnected;
     var horde_connection_status = ConnStatus.Disconnected;
@@ -212,6 +213,7 @@
     var preventmultisessionguid = Math.floor(Math.random()*999999);
     var horde_userdata = {};
     var horde_perfinfo = {};
+    var horde_workers = [];
     var session_uptime_start = new Date();
     var jobsdone = 0;
     var sessionkudos = 0;
@@ -299,6 +301,7 @@
       preventmultisessionguid = Math.floor(Math.random()*999999);
       horde_userdata = {};
       horde_perfinfo = {};
+      horde_workers = [];
       session_uptime_start = new Date();
       jobsdone = 0;
       sessionkudos = 0;
@@ -496,6 +499,14 @@
           }).catch((error) => {
             dbglog("Error updating perf data");
           });
+        fetch(localsettings.horde_base_url + stablehorde_workers_endpoint)
+          .then(x => x.json())
+          .then(workerdata => {
+            horde_workers = workerdata;
+            dbglog("Worker data updated");
+          }).catch((error) => {
+            dbglog("Error updating worker data");
+          });
       }
 
     function connect_to_horde()
@@ -532,6 +543,7 @@
             horde_connection_status = ConnStatus.Connected;
        
             msginfo("Awaiting First Task...");
+            update_perf_data();
             document.getElementById("connect_panel").style.display = "none";
             document.getElementById("setup_panel").style.display = "none";
             document.getElementById("worker_panel").style.display = "block";
@@ -963,18 +975,38 @@
 
       if(horde_connection_status == ConnStatus.Connected)
       {
+        var startkudos = (parseFloat(horde_userdata.kudos));
+        var foundself = null;
+        for(var i=0;i<horde_workers.length;++i)
+        {
+          if(horde_workers[i].name==(workerprefix+localsettings.workername))
+          {
+            foundself = horde_workers[i];
+            break;
+          }
+        }
+
         var newinfo = 
          `<span class="color_blue">Total Workers in Horde:</span> `+horde_perfinfo.worker_count+`<br>
-          <span class="color_blue">Pending Requests in Horde:</span> `+horde_perfinfo.queued_requests+`<br>
-          <span class="color_blue">Username:</span> `+horde_userdata.username+`<br>
-          <span class="color_blue">Worker Name:</span> `+(workerprefix+localsettings.workername)+`<br>
-          <span class="color_blue">Starting Kudos:</span> `+(parseFloat(horde_userdata.kudos)).toFixed(1)+`<br><br>
+          <span class="color_blue">Pending Requests in Horde:</span> `+horde_perfinfo.queued_requests+`<br><br>
 
+          <span class="color_blue">Username:</span> `+horde_userdata.username
+          +`<br><span class="color_blue">Account Kudos:</span> `+startkudos.toFixed(1)          
+          +`<br><span class="color_blue">Worker Name:</span> `+(workerprefix+localsettings.workername)
+          +`<br><span class="color_blue">Worker ID:</span> `+(foundself?foundself.id:"Unknown")
+          +`<br><span class="color_blue">Total Req. Fulfilled:</span> `+(foundself?(foundself.requests_fulfilled+ ` (<span class="color_red">`+(-foundself.uncompleted_jobs)+"</span>)"):"Unknown")
+          +`<br><span class="color_blue">Total Uptime:</span> `+(foundself?foundself.uptime:"Unknown")+`s`
+          +`<br><span class="color_blue">Models Hosted:</span> `+(foundself?foundself.models.length:"Unknown")
+          
+          + `<br><br>
           <span class="color_blue">Session Uptime:</span> `+((new Date()-session_uptime_start)/1000).toFixed(1)+`s<br>
           <span class="color_blue">Last Job Time:</span> ` + (lasttasktime==null?"None":lasttasktime.toLocaleTimeString()) + ` (took `+lasttasktimetaken.toFixed(1)+`s)<br>
           <span class="color_blue">Requests Fulfilled:</span> `+jobsdone+`<br>
           <span class="color_blue">Kudos Generated:</span> `+sessionkudos.toFixed(1)+`<br>          
-          <span class="color_blue">Errors Encountered:</span> `+errorsencountered;
+          <span class="color_blue">Errors Encountered:</span> `+errorsencountered+
+          `<br><br><p>Thank you for your contribution!</p>`;
+
+          
           document.getElementById("workerinfo").innerHTML = newinfo;
       }
 
@@ -1131,9 +1163,7 @@
          <div>
            <div id="workerinfo">
            
-            </div>
-            <br>
-            <p>Thank you for your contribution!</p>
+            </div>            
             <button class="w-100 btn btn-primary btn bg_orange mb-2" id="togglepause" onclick="togglepause()">Pause Web Worker</button>
             <button class="w-100 btn btn-primary btn bg_red" onclick="disconnect()">Stop Web Worker</button>
          </div>
