@@ -1074,7 +1074,7 @@
             pred[predictions[i].className] = predictions[i].probability;
           }
           let isnsfw = false;
-          if (pred.Porn > 0.33 || pred.Sexy > 0.35 || pred.Hentai > 0.12) {
+          if (pred.Porn > 0.33 || pred.Sexy > 0.35 || pred.Hentai > 0.115) {
             isnsfw = true;            
           }
           dbglog(pred);
