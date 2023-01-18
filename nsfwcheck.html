@@ -1,0 +1,21 @@
+<!-- Load TensorFlow.js. This is required -->
+<script src="tf.min.js"  type="text/javascript"></script>
+<script src="nsfwjs.min.js" type="text/javascript"></script>
+
+
+
+<script>
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  // some image here
+  img.src = "https://i.imgur.com/Kwxetau.jpg";
+
+  // Load the model.
+  nsfwjs.load('mdl/').then((model) => {
+    // Classify the image.
+    model.classify(img).then((predictions) => {
+      console.log("Predictions", predictions);
+    });
+  });
+</script>
+<pre>Checkout console.log output for results!</pre>
