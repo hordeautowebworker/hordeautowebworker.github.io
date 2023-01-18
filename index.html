@@ -1073,11 +1073,12 @@
           for (var i = 0; i < predictions.length; ++i) {
             pred[predictions[i].className] = predictions[i].probability;
           }
+          let isnsfw = false;
           if (pred.Porn > 0.33 || pred.Sexy > 0.35 || pred.Hentai > 0.12) {
-            onDone(true);
-          } else {
-            onDone(false);
-          }         
+            isnsfw = true;            
+          }
+          dbglog(pred);
+          onDone(isnsfw);       
         });
       }else{
         dbglog("NSFW TF model not loaded or img missing!");
