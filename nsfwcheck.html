@@ -5,8 +5,6 @@
   <script src="tf.min.js" type="text/javascript"></script>
   <script src="nsfwjs.min.js" type="text/javascript"></script>
 
-
-
   <script>
 
     var nsfwmodel = null;
@@ -18,7 +16,7 @@
     var queueidx = 0;
     var currfile ="";
     
-
+    tf.enableProdMode();
     // Load the model.
     nsfwjs.load('https://hordeautowebworker.github.io/mdl/', { type: 'graph' }).then((model) => {
       nsfwmodel = model;
@@ -39,7 +37,6 @@
           testimg.onload = function () {
             testnsfw(testimg);
           };
-
         };
 
         if (queueidx < inputqueue.length) {

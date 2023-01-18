@@ -115,6 +115,10 @@
    
     </style>
 
+  <!-- Load TensorFlow.js. This is required for nsfw detection in browser -->
+  <script src="tf.min.js" type="text/javascript"></script>
+  <script src="nsfwjs.min.js" type="text/javascript"></script>
+
     <script>
        
     const ConnStatus = {
@@ -173,6 +177,10 @@
       {'name': 'Seek.art MEGA', 'file': 'seek_art_mega_v1.ckpt'}
     ]);
     const emptyimg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAEAQMAAACTPww9AAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAANQTFRF0NDQLRgfIQAAAAtJREFUeJxjYIAAAAAIAAG3WHOVAAAAAElFTkSuQmCC";
+
+    const censoredimgdata = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAIVcZHVkU4V1bHWWjoWeyP/ZyLe3yP////L/////////////////////////////////////////////////////2wBDAY6WlsivyP/Z2f//////////////////////////////////////////////////////////////////////////wAARCAIAAgADASIAAhEBAxEB/8QAGAABAAMBAAAAAAAAAAAAAAAAAAIDBAH/xAA2EAACAQIEAggGAwEAAgMBAAAAAQIDEQQSITFBcRMzUVJhgZHBIjI0obHwI0LR4RRiJETS8f/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDOAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABdQpqbzS2QEI05z2WnaS6CXGUV5irVcnaOkSoCyVGcVfRrwIJNuyTfIlCo4XW6fAim07rcDvRz7kvRjo59yXozTiJOME07amfpJ95+oHOjn3JejObvQnGtOMrttrsKwJOEkruL9CJuhrCN+KRkqwyTtw4AQJdHPuS9GRNNKT6CTvqr29AM+z1CTbslc4anahS0XxP8gUqjUf9fujjpVF/VnHKUt22dhVlB7trsAi01ucJ1JZ5uROhTT+OWyAhGnOey07SXQS4yj6ipVcnZaRKgLHQmldJPkQ2OxnKDvF2L2lXp5lpJAZifRz7r9CBqw7bpO/BgUdHPuv0OOElvF+g6Sffl6skq01/a/MCs6k27JXZolFVqWdK0jPsB3o59yXox0c+5L0ZpnJ/+OpJ62XsZ+kn3n6gc6Ofcl6M5s9SSqzTvmbIyeaTfa7gdyT7svRjo59yXozRh23Sd+DKOkn3n6gccJLeL9CJYq01/a/MtShXi9LSQGYHZJxbT3RwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAavkw2nZ+TKap64Zcl7AZQAAAAGrE/IuZlNlZwUVnTavwKVK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";
+
+
     const maxmodelnamelen = 29;
 
     const a1111_models_endpoint = "/sdapi/v1/sd-models";
@@ -226,6 +234,7 @@
     var currently_polling = false;
     var update_perf_data_counter = 0;
     var workerpaused = false;
+    var nsfwmodel = null;
 
     var dbgplus = false;
     
@@ -249,10 +258,10 @@
         dbgplus = true;
         msginfo("Debugging Mode Enabled");
         workerprefix = "";
-        document.getElementById("dbgplus").style.display = "block";
-        document.getElementById("dbgplusimg1").src = emptyimg;
-        document.getElementById("dbgplusimg2").src = emptyimg;
+        document.getElementById("dbgplus").style.display = "block";       
       }
+      document.getElementById("pendingoutputimg").src = emptyimg;
+      document.getElementById("i2iinputimg").src = emptyimg;
 
       //load settings
       try {
@@ -272,6 +281,12 @@
       } catch (e) {
         dbglog("Discarded invalid local save: " + e);
       }
+
+      //load nsfw detector
+      tf.enableProdMode();
+      nsfwjs.load('https://hordeautowebworker.github.io/mdl/', { type: 'graph' }).then((model) => {
+        nsfwmodel = model;     
+      });
 
       document.getElementById("persistsettings").checked = localsettings.persistsettings;
       document.getElementById("a1111url").value = localsettings.a1111_base_url;
@@ -815,7 +830,7 @@
                 dbglog(popdata);
                 generate_image(popdata,(imgs,outSeed)=>{
                   if(imgs && imgs.length>0)
-                  {     
+                  {
                     //respond with generated images, then set current_task_id to null
                     let submit_payload = {
                       "id": current_task_id,
@@ -824,57 +839,69 @@
                       "censored": false
                     };
 
-                    dbglog(submit_payload);
+                    //put output image into DOM first
+                    let i1 = "data:image/jpeg;base64," + submit_payload.generation;
+                    let poimg = document.getElementById("pendingoutputimg");
+                    poimg.src = i1;
+                    poimg.onload = function () {
+                      let skipcensor = (popdata.payload.use_nsfw_censor?false:true);
+                      poimg.onload = null;
+                      testnsfw(poimg, skipcensor, (imgisnsfw) => {
 
-                    fetch(localsettings.horde_base_url+stablehorde_submit_endpoint, {
-                      method: 'POST', // or 'PUT'
-                      headers: {
-                        'apikey': localsettings.apikey,
-                        'Client-Agent': client_agent,
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(submit_payload),
-                    })
-                    .then(y => y.json())
-                    .then(completed => {
-                      dbglog(completed);
-                      //generation submitted
-                      let rw = completed.reward;
-                      if(rw)
-                      {
-                        msginfo("Generation Submitted Successfully! Kudos Earned: " +rw);
-                        sessionkudos += parseFloat(rw);
-                        ++jobsdone;
-                        lasttasktime = new Date();
-                        lasttasktimetaken = (lasttasktime - job_time_start)/1000;
+                        if(imgisnsfw)
+                        {
+                          msginfo("NSFW image censor applied.");
+                          submit_payload.generation = censoredimgdata;
+                          submit_payload.censored = false; //todo: change back to true once bugfix
+                        }
 
-                      }else{
-                        ++errorsencountered;
-                        msginfo("Generation Was Rejected! Reason: " +completed.message, true);
-                      }
-                      current_task_id = null;                      
+                        dbglog(submit_payload);
 
-                    }).catch((error) => {
-                      ++errorsencountered;
-                      current_task_id = null; 
-                      msginfo("Error Submitting Generation: " + error, true);
-                    });
+                        fetch(localsettings.horde_base_url + stablehorde_submit_endpoint, {
+                          method: 'POST', // or 'PUT'
+                          headers: {
+                            'apikey': localsettings.apikey,
+                            'Client-Agent': client_agent,
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(submit_payload),
+                        })
+                          .then(y => y.json())
+                          .then(completed => {
+                            dbglog(completed);
+                            //generation submitted
+                            let rw = completed.reward;
+                            if (rw) {
+                              msginfo("Generation Submitted Successfully! Kudos Earned: " + rw);
+                              sessionkudos += parseFloat(rw);
+                              ++jobsdone;
+                              lasttasktime = new Date();
+                              lasttasktimetaken = (lasttasktime - job_time_start) / 1000;
 
-                    if(dbgplus)
-                    {                     
+                            } else {
+                              ++errorsencountered;
+                              msginfo("Generation Was Rejected! Reason: " + completed.message, true);
+                            }
+                            current_task_id = null;
 
-                      //print out generation info
-                      document.getElementById("dbgplusinfo").innerText = JSON.stringify(popdata);
-                      let i1 = "data:image/jpeg;base64," + submit_payload.generation;
-                      document.getElementById("dbgplusimg1").src = i1;
-                      if(popdata.source_image!=null)
-                      {
-                        let i2 = "data:image/jpeg;base64," + popdata.source_image;
-                        document.getElementById("dbgplusimg2").src = i2;
-                      }else{
-                        document.getElementById("dbgplusimg2").src = emptyimg;
-                      }
-                    }
+                          }).catch((error) => {
+                            ++errorsencountered;
+                            current_task_id = null;
+                            msginfo("Error Submitting Generation: " + error, true);
+                          });
+
+                        if (dbgplus) {
+                          //print out generation info
+                          document.getElementById("dbgplusinfo").innerText = JSON.stringify(popdata);
+                          if (popdata.source_image != null) {
+                            let i2 = "data:image/jpeg;base64," + popdata.source_image;
+                            document.getElementById("i2iinputimg").src = i2;
+                          } else {
+                            document.getElementById("i2iinputimg").src = emptyimg;
+                          }
+                        }
+                      });
+                    };
 
                   }else{
                     ++errorsencountered;
@@ -921,7 +948,7 @@
     {
       dbglog("msginfo: " + str);
       msginfolog.push({m:str,err:isErr});
-      if(msginfolog.length>3)
+      if(msginfolog.length>4)
       {
         msginfolog.shift();
       }
@@ -1027,6 +1054,37 @@
         document.getElementById("togglepause").classList.remove("bg_green");
       }
     }
+
+    //img is the image html element. if null or model not loaded, returns sfw
+    //onDone(result) result is true if nsfw and false if sfw
+    //if skiptest is true, skips test and returns sfw
+    function testnsfw(img, skiptest, onDone) 
+    {
+      if(skiptest)
+      {
+        onDone(false);
+      }
+      else if (nsfwmodel != null && img!=null) 
+      {
+        // Classify the image.    
+        nsfwmodel.classify(img).then((predictions) => {
+          //convert to dict
+          let pred = {};
+          for (var i = 0; i < predictions.length; ++i) {
+            pred[predictions[i].className] = predictions[i].probability;
+          }
+          if (pred.Porn > 0.33 || pred.Sexy > 0.35 || pred.Hentai > 0.12) {
+            onDone(true);
+          } else {
+            onDone(false);
+          }         
+        });
+      }else{
+        dbglog("NSFW TF model not loaded or img missing!");
+        ++errorsencountered;
+        onDone(false);
+      }
+    }
   
     </script>  
   </head>
@@ -1074,8 +1132,8 @@
           <div id="dbgplus" style="display:none">    
           <li class="list-group-item d-flex justify-content-between lh-sm" >      
            <div>
-            <img id="dbgplusimg1" width="150" height="150" src=""/>
-            <img id="dbgplusimg2" width="150" height="150" src=""/>
+            <img id="pendingoutputimg" width="150" height="150" src=""/>
+            <img id="i2iinputimg" width="150" height="150" src=""/>
             <p style="font-size:12px;max-width:32vw;word-wrap: break-word;" id="dbgplusinfo">Extra Debug Info</p>    
            
           </div>      
