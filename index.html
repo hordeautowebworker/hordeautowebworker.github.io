@@ -835,7 +835,7 @@
                     let submit_payload = {
                       "id": current_task_id,
                       "generation": imgs[0],
-                      "seed": (outSeed?outSeed.toString():popdata.payload.seed),
+                      "seed": (outSeed?outSeed:popdata.payload.seed),
                       "censored": false
                     };
 
