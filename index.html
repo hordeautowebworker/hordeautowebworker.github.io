@@ -852,7 +852,7 @@
                         {
                           msginfo("NSFW image censor applied.");
                           submit_payload.generation = censoredimgdata;
-                          submit_payload.censored = false; //todo: change back to true once bugfix
+                          submit_payload.censored = true;
                         }
 
                         dbglog(submit_payload);
