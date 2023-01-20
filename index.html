@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <title>HordeAutoWebWorker</title>
+    <title>HordeAutoWebBridge</title>
    
-    <!-- This is a zero install JS based Web Worker for Stable Horde that bridges Automatic1111 API to Stable Horde API
+    <!-- This is a zero install JS based Web Bridge for Stable Horde that bridges Automatic1111 API to Stable Horde API
     Created by Concedo, because I cannot stand to have a duplicate 20GB of files just so I can run a horde worker
     Especially when I have a perfectly good A111 install there.
     -->
@@ -187,7 +187,7 @@
     const a1111_options_endpoint = "/sdapi/v1/options";
     const a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
     const a1111_img2img_endpoint = "/sdapi/v1/img2img";
-    const client_agent = "HordeAutoWebWorker:1:concedo#4289";
+    const client_agent = "HordeAutoWebBridge:1:concedo#4289";
     const stablehorde_finduser_endpoint = "/api/v2/find_user";
     const stablehorde_perf_endpoint = "/api/v2/status/performance";
     const stablehorde_pop_endpoint = "/api/v2/generate/pop";
@@ -198,7 +198,7 @@
     var horde_connection_status = ConnStatus.Disconnected;
     var current_loaded_model = "";
     var localmodels = []; //stores an array of locally available models, along with the names to show on horde {name:name, file:file, shared:true}
-    var workerprefix = "HAWW_";
+    var workerprefix = "HAWB_";
 
     //configurable settings
     var localsettings = {
@@ -207,7 +207,7 @@
       horde_base_url:"https://stablehorde.net",
       apikey:"0000000000",
 
-      workername: "WebWorker" + Math.floor(Math.random() * 8999 + 1000),
+      workername: "WebBridgeWorker" + Math.floor(Math.random() * 8999 + 1000),
       allownsfw: true, //note that although we express a preference to avoid nsfw, we cannot guarantee it as we dont have the model to detect nsfw images
       allowunsafeip: true,
       allowimg2img: true,
@@ -265,7 +265,7 @@
 
       //load settings
       try {
-        let loadedsettingsjson = localStorage.getItem("hordeautowebworker_settings");
+        let loadedsettingsjson = localStorage.getItem("hordeautowebbridge_settings");
         if (loadedsettingsjson != null && loadedsettingsjson != "") {
           let loadedsettings = JSON.parse(loadedsettingsjson);
           //see if persist is enabled		
@@ -284,7 +284,7 @@
 
       //load nsfw detector
       tf.enableProdMode();
-      nsfwjs.load('https://hordeautowebworker.github.io/mdl/', { type: 'graph' }).then((model) => {
+      nsfwjs.load('https://hordeautowebbridge.github.io/mdl/', { type: 'graph' }).then((model) => {
         nsfwmodel = model;     
       });
 
@@ -743,7 +743,7 @@
       }
 
       localsettings.persistsettings = document.getElementById("persistsettings").checked?true:false;
-      localStorage.setItem("hordeautowebworker_settings",JSON.stringify(localsettings));      
+      localStorage.setItem("hordeautowebbridge_settings",JSON.stringify(localsettings));      
     
     }
 
@@ -751,7 +751,7 @@
     function renew_multi_session()
     {
       preventmultisessionguid = Math.floor(Math.random()*999999); 
-      localStorage.setItem("hordeautowebworker_preventmulti",preventmultisessionguid);
+      localStorage.setItem("hordeautowebbridge_preventmulti",preventmultisessionguid);
     }
 
     function prepare_model_list()
@@ -772,7 +772,7 @@
       //only do stuff if we're fully connected
       if (a1111_connection_status == ConnStatus.Connected && horde_connection_status == ConnStatus.Connected) {
         //prevent multisession
-        let multi = localStorage.getItem("hordeautowebworker_preventmulti");
+        let multi = localStorage.getItem("hordeautowebbridge_preventmulti");
         if(preventmultisessionguid!=multi)
         {
           //someone has started a new session elsewhere. We must disconnect
@@ -1045,11 +1045,11 @@
 
       if(workerpaused)
       {
-        document.getElementById("togglepause").innerText = "Unpause Web Worker";
+        document.getElementById("togglepause").innerText = "Unpause Web Bridge";
         document.getElementById("togglepause").classList.remove("bg_orange");
         document.getElementById("togglepause").classList.add("bg_green");
       }else{
-        document.getElementById("togglepause").innerText = "Pause Web Worker";
+        document.getElementById("togglepause").innerText = "Pause Web Bridge";
         document.getElementById("togglepause").classList.add("bg_orange");
         document.getElementById("togglepause").classList.remove("bg_green");
       }
@@ -1094,8 +1094,8 @@
 <div class="container">
   <main>
     <div class="py-5 text-center">
-      <img width="80" height="80" style="border-radius: 20%;" src="data:image/jpeg;base64,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" />
-      <h2>HordeAutoWebWorker</h2>
+      <img width="80" height="80" style="border-radius: 20%;" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAIVcZHVkU4V1bHWWjoWeyP/ZyLe3yP////L/////////////////////////////////////////////////////2wBDAY6WlsivyP/Z2f//////////////////////////////////////////////////////////////////////////wAARCACAAIADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAECA//EACUQAQEBAAEFAAEEAwEAAAAAAAABEQISITFBUWEDE4HRIjJxwf/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AzokVBcMTTUAUANIAvlcZ00GqntfPswDwJqaDSAoxGsYlWUCyxfJb2QDcanKM+VAvlUJQUQ0FiysqCoAJaauHYGBcMBBcMBNXUwBdNQBVtQAWoqiLoYgaGAJqKKGmki9P5QQy3014S3yCdP07H9H9Av8AAT/wk0AX/Gfab8FSL3Tqp5EUT0ewJxt7+IuSGoBaF8kAPdXFnHfPgVmRrp+5P+reWduPZJNvcDOP3V6vXGM+6T2CeaSHirs9T+QTDC38oIonf6ncGoZSTI1BUk1rIsXAJxk8scvzU5ctv4OVlzAXlMwn+31eV2Rm3L2Avmpt8Q8pbngA1EVF00AAMB0yr01vPwfwis5y+HO5xxqSS73c/wBTvykBnLZMjfQxLYvUDXRWei/Ccr9a66Dnd8I69UvmGcb8EcVdP25fGp+1fVijA1eHKekyzzAAAdzRUEv1y3eVrrfjlBU9nfklvdOPKwF6bDvGpzla7URjRvpidAMy2e2pz5RLEB0n6n2L1xyxcB0zjfUTonrs5rOVn0H/2Q==" />
+      <h2>HordeAutoWebBridge</h2>
       <p class="lead" style="font-size:1rem">A JS based Stable Horde Worker to bridge Automatic1111 API with Stable Horde API.<br>No extra 20 GB downloads or installs, just click and share your own local models.</p>
       
     </div>
@@ -1114,7 +1114,7 @@
                 <li class="instructions">Start Automatic1111 WebUi by running <b>webui-user.bat</b></li>
                 <li class="instructions">Press the <b class="color_blue">Connect to A1111</b> button  to connect to Automatic1111 API.</li>
                 <li class="instructions">Fill in your worker name, details and API key.</li>
-                <li class="instructions">Press the <b class="color_blue">Start Web Worker</b> button to connect to Stable Horde, and farm your Kudos.</li>
+                <li class="instructions">Press the <b class="color_blue">Start Web Bridge</b> button to connect to Stable Horde, and farm your Kudos.</li>
                 <li class="instructions" style="font-style: italic;">Note: You are advised not to locally use A1111 simultaneously while running this worker.</li>
               </ul>
             </div>
@@ -1220,17 +1220,17 @@
             
 
           <br>
-          <button class="w-100 btn btn-primary btn" onclick="connect_to_horde()">Start Web Worker</button>
+          <button class="w-100 btn btn-primary btn" onclick="connect_to_horde()">Start Web Bridge</button>
         </div>
 
         <div class="card p-2" id="worker_panel" style="display: block;">
-          <h4 class="mb-3">Worker Status</h4>
+          <h4 class="mb-3">Bridge Status</h4>
          <div>
            <div id="workerinfo">
            
             </div>            
-            <button class="w-100 btn btn-primary btn bg_orange mb-2" id="togglepause" onclick="togglepause()">Pause Web Worker</button>
-            <button class="w-100 btn btn-primary btn bg_red" onclick="disconnect()">Stop Web Worker</button>
+            <button class="w-100 btn btn-primary btn bg_orange mb-2" id="togglepause" onclick="togglepause()">Pause Web Bridge</button>
+            <button class="w-100 btn btn-primary btn bg_red" onclick="disconnect()">Stop Web Bridge</button>
          </div>
         
         </div>       
@@ -1240,7 +1240,7 @@
   </main>
   <hr class="my-4">
   <footer class="text-muted text-center text-small">
-    <p class="mb-1">HordeAutoWebWorker v1 - Made by Concedo</p>   
+    <p class="mb-1">HordeAutoWebBridge v1 - Made by Concedo</p>   
     <br>
   </footer>
 </div>
